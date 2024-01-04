@@ -9,6 +9,8 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
 #include <cstdlib>
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -16,6 +18,15 @@ namespace net = boost::asio;
 namespace ssl = boost::asio::ssl;
 using tcp = net::ip::tcp;
 
+HTTPRequest::HTTPRequest()
+{
+	// Initialize the logger
+	auto console_logger = spdlog::stdout_color_mt("console");
+	auto file_logger = spdlog::basic_logger_mt("file_logger", "logs/binary_exchange_handler_log.txt");
+	spdlog::set_default_logger(file_logger);
+	spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread %t] %v");
+	spdlog::flush_on(spdlog::level::info);
+}
 std::string HTTPRequest::performBinanceAPIRequest(const std::string &host, const std::string &port, const std::string &target, int version)
 {
 	try
@@ -56,19 +67,22 @@ std::string HTTPRequest::performBinanceAPIRequest(const std::string &host, const
 		// Receive the HTTP response
 		http::read(stream, buffer, res);
 
-		// Write the message to standard out
-		// std::cout << boost::beast::buffers_to_string(res.body().data()) << std::endl;
-
 		// Gracefully close the socket
 		beast::error_code ec;
 		stream.shutdown(ec);
 
 		// Return the response body as a string
-		return boost::beast::buffers_to_string(res.body().data());
+		auto response = boost::beast::buffers_to_string(res.body().data());
+
+		// Log success
+		logger->info("Successfully performed Binance API request to {}:{}{}", host, port, target);
+
+		return response;
 	}
 	catch (std::exception const &e)
 	{
-		std::cerr << "Error: " << e.what() << std::endl;
+		// Log an error
+		logger->error("Error: {}", e.what());
 		return ""; // Return an empty string in case of an error
 	}
 }
@@ -80,8 +94,8 @@ void HTTPRequest::performJSONDataParsing(const std::string &jsonResponse)
 
 	if (document.HasParseError())
 	{
-		std::cerr << "Error parsing JSON. Parse error code: " << document.GetParseError()
-				  << ", Offset: " << document.GetErrorOffset() << std::endl;
+		// Log an error
+		logger->error("Error parsing JSON. Parse error code: {}, Offset: {}", document.GetParseError(), document.GetErrorOffset());
 		return;
 	}
 
@@ -135,28 +149,33 @@ void HTTPRequest::performJSONDataParsing(const std::string &jsonResponse)
 			}
 			else
 			{
-				std::cerr << "Missing or invalid 'symbol' in JSON response." << std::endl;
+				// Log an error
+				logger->error("Missing or invalid 'symbol' in JSON response.");
 			}
 		}
 	}
 	else
 	{
-		std::cerr << "Missing or invalid 'symbols' array in JSON response." << std::endl;
+		// Log an error
+		logger->error("Missing or invalid 'symbols' array in JSON response.");
 	}
 
-	// Print the entire unordered map for verification
-	std::cout << "Symbol Info Map:" << std::endl;
+	// Log the entire unordered map for verification
+	logger->info("Symbol Info Map:");
 	for (const auto &symbolPair : symbolInfoMap)
 	{
 		const std::string &symbol = symbolPair.first;
 		const auto &infoMap = symbolPair.second;
 
-		std::cout << "Symbol: " << symbol << std::endl;
+		logger->info("Symbol: {}", symbol);
 		for (const auto &infoPair : infoMap)
 		{
 			const std::string &key = infoPair.first;
 			const std::string &value = infoPair.second;
-			std::cout << "  Key: " << key << ", Value: " << value << std::endl;
+			logger->info("  Key: {}, Value: {}", key, value);
 		}
 	}
+
+	// Log success
+	logger->info("Successfully performed JSON data parsing");
 }
