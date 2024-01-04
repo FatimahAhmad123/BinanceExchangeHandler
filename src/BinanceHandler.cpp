@@ -1,4 +1,5 @@
 #include "BinanceHandler.h"
+#include "rapidjson/document.h"
 #include <iostream>
 #include <string>
 #include <boost/beast/core.hpp>
@@ -56,26 +57,106 @@ std::string HTTPRequest::performBinanceAPIRequest(const std::string &host, const
 		http::read(stream, buffer, res);
 
 		// Write the message to standard out
-		std::cout << res << std::endl;
+		// std::cout << boost::beast::buffers_to_string(res.body().data()) << std::endl;
 
 		// Gracefully close the socket
 		beast::error_code ec;
 		stream.shutdown(ec);
 
-		// not_connected happens sometimes
-		// so don't bother reporting it.
-		//
-		if (ec && ec != beast::errc::not_connected)
-			throw beast::system_error{ec};
-
-		// If we get here then the connection is closed gracefully
-
-		// Return the response as a string
+		// Return the response body as a string
 		return boost::beast::buffers_to_string(res.body().data());
 	}
 	catch (std::exception const &e)
 	{
 		std::cerr << "Error: " << e.what() << std::endl;
 		return ""; // Return an empty string in case of an error
+	}
+}
+
+void HTTPRequest::performJSONDataParsing(const std::string &jsonResponse)
+{
+	rapidjson::Document document;
+	document.Parse(jsonResponse.c_str());
+
+	if (document.HasParseError())
+	{
+		std::cerr << "Error parsing JSON. Parse error code: " << document.GetParseError()
+				  << ", Offset: " << document.GetErrorOffset() << std::endl;
+		return;
+	}
+
+	if (document.HasMember("symbols") && document["symbols"].IsArray())
+	{
+		const rapidjson::Value &symbolsArray = document["symbols"];
+
+		for (rapidjson::SizeType i = 0; i < symbolsArray.Size(); ++i)
+		{
+			const rapidjson::Value &symbolObject = symbolsArray[i];
+
+			if (symbolObject.HasMember("symbol") && symbolObject["symbol"].IsString())
+			{
+				std::string symbol = symbolObject["symbol"].GetString();
+				std::string quoteAsset = symbolObject["quoteAsset"].GetString();
+				std::string status = symbolObject["status"].GetString();
+				std::string tickSize = "";
+				std::string stepSize = "";
+
+				if (symbolObject.HasMember("filters") && symbolObject["filters"].IsArray())
+				{
+					const rapidjson::Value &filtersArray = symbolObject["filters"];
+
+					for (rapidjson::SizeType j = 0; j < filtersArray.Size(); ++j)
+					{
+						const rapidjson::Value &filterObject = filtersArray[j];
+
+						if (filterObject.HasMember("filterType") && filterObject["filterType"].IsString())
+						{
+							std::string filterType = filterObject["filterType"].GetString();
+
+							if (filterType == "PRICE_FILTER" && filterObject.HasMember("tickSize") &&
+								filterObject["tickSize"].IsString())
+							{
+								tickSize = filterObject["tickSize"].GetString();
+							}
+							else if (filterType == "LOT_SIZE" && filterObject.HasMember("stepSize") &&
+									 filterObject["stepSize"].IsString())
+							{
+								stepSize = filterObject["stepSize"].GetString();
+							}
+						}
+					}
+				}
+
+				// Storing in unordered
+				symbolInfoMap[symbol]["status"] = status;
+				symbolInfoMap[symbol]["quoteAsset"] = quoteAsset;
+				symbolInfoMap[symbol]["tickSize"] = tickSize;
+				symbolInfoMap[symbol]["stepSize"] = stepSize;
+			}
+			else
+			{
+				std::cerr << "Missing or invalid 'symbol' in JSON response." << std::endl;
+			}
+		}
+	}
+	else
+	{
+		std::cerr << "Missing or invalid 'symbols' array in JSON response." << std::endl;
+	}
+
+	// Print the entire unordered map for verification
+	std::cout << "Symbol Info Map:" << std::endl;
+	for (const auto &symbolPair : symbolInfoMap)
+	{
+		const std::string &symbol = symbolPair.first;
+		const auto &infoMap = symbolPair.second;
+
+		std::cout << "Symbol: " << symbol << std::endl;
+		for (const auto &infoPair : infoMap)
+		{
+			const std::string &key = infoPair.first;
+			const std::string &value = infoPair.second;
+			std::cout << "  Key: " << key << ", Value: " << value << std::endl;
+		}
 	}
 }
