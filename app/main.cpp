@@ -5,6 +5,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <chrono>
+#include <thread>
 
 std::shared_ptr<spdlog::logger> logger;
 
@@ -120,8 +122,16 @@ int main()
 
 					// Call performJSONDataParsing with the response
 					jsonParser.performJSONDataParsing(response);
-					QueryHandler queryHandler;
-					queryHandler.handleQueries("query.json", jsonParser);
+
+					while (true)
+					{
+						// Read the queries from query.json
+						QueryHandler queryHandler;
+						queryHandler.handleQueries("query.json", jsonParser);
+
+						// Sleep for a certain interval before checking again (e.g., every 1 second)
+						std::this_thread::sleep_for(std::chrono::seconds(1));
+					}
 				}
 				else
 				{

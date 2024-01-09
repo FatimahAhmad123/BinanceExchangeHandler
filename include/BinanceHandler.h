@@ -3,7 +3,6 @@
 
 #include <string>
 #include <unordered_map>
-
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "rapidjson/document.h"
@@ -40,7 +39,7 @@ public:
 class QueryHandler
 {
 public:
-	void handleQueries(const std::string &queryFile, const JSONParser &jsonParser);
+	void handleQueries(const std::string &queryFile, JSONParser &jsonParser);
 	void handleGetQuery(const rapidjson::Value &queryObject, const JSONParser &jsonParser);
 	void handleUpdateQuery(const rapidjson::Value &queryObject, JSONParser &jsonParser);
 	void handleDeleteQuery(const rapidjson::Value &queryObject, JSONParser &jsonParser);
