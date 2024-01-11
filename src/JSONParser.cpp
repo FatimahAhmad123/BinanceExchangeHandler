@@ -109,9 +109,18 @@ const std::unordered_map<std::string, std::unordered_map<std::string, std::strin
 
 const std::unordered_map<std::string, std::string> &JSONParser::getSymbolInfo(const std::string &symbol) const
 {
-	return symbolInfoMap.at(symbol);
+	auto it = symbolInfoMap.find(symbol);
+	if (it != symbolInfoMap.end())
+	{
+		return it->second;
+	}
+	else
+	{
+		// Symbol not found, return an empty map or handle appropriately
+		static const std::unordered_map<std::string, std::string> emptyMap;
+		return emptyMap;
+	}
 }
-
 // Setter method implementations
 void JSONParser::setSymbolInfoMap(const std::unordered_map<std::string, std::unordered_map<std::string, std::string>> &symbolInfoMap)
 {
@@ -134,6 +143,7 @@ void JSONParser::setSymbolInfo(const std::string &symbol, const std::unordered_m
 
 void JSONParser::handleDelete(const std::string &symbol)
 {
+	logger->info("Before deletion. SymbolInfoMap size: {}", symbolInfoMap.size());
 	const auto &it = symbolInfoMap.find(symbol);
 	if (it != symbolInfoMap.end())
 	{
@@ -146,18 +156,21 @@ void JSONParser::handleDelete(const std::string &symbol)
 		// Symbol not found
 		logger->warn("Symbol {} not found for deletion.", symbol);
 	}
+	logger->info("After deletion. SymbolInfoMap size: {}", symbolInfoMap.size());
 }
 
 void JSONParser::handleUpdate(const std::string &symbol, const std::unordered_map<std::string, std::string> &updatedInfo)
 {
+
 	const auto &it = symbolInfoMap.find(symbol);
 	if (it != symbolInfoMap.end())
 	{
-		// Symbol found, perform update
 		for (const auto &entry : updatedInfo)
 		{
+			logger->info("Before update. SymbolInfoMap: {}", it->second[entry.first]);
 			it->second[entry.first] = entry.second;
-			logger->info("Symbol: {}, Field: {} updated to {} {}", symbol, entry.first, entry.second, it->second[entry.first]);
+			logger->info("Symbol: {}, Field: {} updated to {}", symbol, entry.first, entry.second);
+			logger->info("After update. SymbolInfoMap: {}", it->second[entry.first]);
 		}
 	}
 	else
