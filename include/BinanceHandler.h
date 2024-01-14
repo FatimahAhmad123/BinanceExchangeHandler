@@ -6,6 +6,7 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "rapidjson/document.h"
+#include <unordered_set>
 
 extern std::shared_ptr<spdlog::logger> logger;
 
@@ -39,10 +40,12 @@ public:
 class QueryHandler
 {
 public:
-	void handleQueries(const std::string &queryFile, JSONParser &jsonParser);
+	std::unordered_set<int> processedIds;
 	void handleGetQuery(const rapidjson::Value &queryObject, JSONParser &jsonParser);
 	void handleUpdateQuery(const rapidjson::Value &queryObject, JSONParser &jsonParser);
 	void handleDeleteQuery(const rapidjson::Value &queryObject, JSONParser &jsonParser);
+
+	void handleQueries(const std::string &queryFile, JSONParser &jsonParser);
 };
 
 #endif

@@ -77,9 +77,6 @@ std::string HTTPRequest::performBinanceAPIRequest(const std::string &host, const
 		// Log success
 		logger->info("Successfully performed Binance API request to {}:{}{}", host, port, target);
 
-		// Create an object of JSONParser
-		JSONParser jsonParser;
-
 		return response;
 	}
 	catch (std::exception const &e)
