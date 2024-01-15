@@ -1,17 +1,65 @@
 #include "BinanceHandler.h"
+#include "rapidjson/document.h"
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include "rapidjson/document.h"
+
+// Initialize a global logger with a file sink
+auto logger = spdlog::basic_logger_mt("binance_logger", "log/binance_log.txt");
+
+// Function to read the logging level from the config file using RapidJSON
+std::string readLoggingLevel(const std::string &configFile)
+{
+	std::ifstream file(configFile);
+	if (!file.is_open())
+	{
+		logger->error("Error opening config file.");
+		return "error";
+	}
+
+	std::ostringstream configContents;
+	configContents << file.rdbuf();
+	file.close();
+
+	rapidjson::Document document;
+	document.Parse(configContents.str().c_str());
+
+	if (!document.HasParseError() && document.HasMember("logging") && document["logging"].HasMember("level"))
+	{
+		return document["logging"]["level"].GetString();
+	}
+
+	return "error";
+}
+
 int main()
 {
+	// Initialize the logger
+	spdlog::set_default_logger(logger);
+
+	// Read logging level from config.json
+	std::string logLevel = readLoggingLevel("config.json");
+
+	// Set the logging level based on the configuration
+	if (logLevel == "error" || logLevel == "info" || logLevel == "warn" || logLevel == "trace" || logLevel == "fatal")
+	{
+		spdlog::set_level(spdlog::level::from_str(logLevel));
+		logger->info("Logging level set to: {}", logLevel);
+	}
+	else
+	{
+		std::cout << "Error reading log level from config." << std::endl;
+		return EXIT_FAILURE;
+	}
 	try
 	{
 		// Read URL from config.json
 		std::ifstream configFile("config.json");
 		if (!configFile.is_open())
 		{
-			std::cerr << "Error opening config file." << std::endl;
+			logger->error("Error opening config file.");
 			return EXIT_FAILURE;
 		}
 
@@ -27,8 +75,7 @@ int main()
 		// Check if parsing succeeded
 		if (configDocument.HasParseError())
 		{
-			std::cerr << "Error parsing JSON in config file. Parse error code: " << configDocument.GetParseError()
-					  << ", Offset: " << configDocument.GetErrorOffset() << std::endl;
+			logger->error("Error parsing JSON in config file. Parse error code: {}, Offset: {}", configDocument.GetParseError(), configDocument.GetErrorOffset());
 			return EXIT_FAILURE;
 		}
 
@@ -60,30 +107,40 @@ int main()
 					// Call performBinanceAPIRequest with the parsed URL
 					std::string response = binanceRequest.performBinanceAPIRequest(host, port, target, version);
 
-					// Perform JSON data parsing
-					binanceRequest.performJSONDataParsing(response);
+					// Create an object of JSONParser
+					JSONParser jsonParser;
+
+					// Call performJSONDataParsing with the response
+					jsonParser.performJSONDataParsing(response);
+
+					// Create an object of QueryHandling
+					QueryHandling queryHandler;
+
+					// Call handleQueries with the query file path
+					queryHandler.handleQueries("query.json");
 				}
 				else
 				{
-					std::cerr << "Invalid URL format: " << apiUrl << std::endl;
+					logger->error("Invalid URL format: {}", apiUrl);
 					return EXIT_FAILURE;
 				}
 			}
 			else
 			{
-				std::cerr << "Invalid URL format: " << apiUrl << std::endl;
+				logger->error("Invalid URL format: {}", apiUrl);
 				return EXIT_FAILURE;
 			}
 		}
 		else
 		{
-			std::cerr << "Missing or invalid 'exchange_info_url' in config file." << std::endl;
+			logger->error("Missing or invalid 'exchange_info_url' in config file.");
 			return EXIT_FAILURE;
 		}
 	}
 	catch (std::exception const &e)
 	{
-		std::cerr << "Error: " << e.what() << std::endl;
+		// Log errors
+		logger->error("Error: {}", e.what());
 		return EXIT_FAILURE;
 	}
 

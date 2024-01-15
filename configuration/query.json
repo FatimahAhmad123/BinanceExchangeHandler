@@ -3,7 +3,7 @@
 		{
 			"id": 1287,
 			"query_type": "GET",
-			"instrument_name": "BTC/USD",
+			"symbol": "BTCUSD",
 			"data": [
 				"status",
 				"ticksize",
@@ -14,7 +14,7 @@
 		{
 			"id": 333,
 			"query_type": "UPDATE",
-			"instrument_name": "BTC/USD",
+			"symbol": "BTCUSD",
 			"data": {
 				"status": "pending"
 			}
@@ -22,7 +22,7 @@
 		{
 			"id": 785,
 			"query_type": "DELETE",
-			"instrument_name": "BTC/USD"
+			"symbol": "BTCUSD"
 		}
 	]
 }
