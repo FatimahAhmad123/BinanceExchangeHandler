@@ -5,9 +5,10 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <chrono>
+#include <thread>
 
-// Initialize a global logger with a file sink
-auto logger = spdlog::basic_logger_mt("binance_logger", "log/binance_log.txt");
+std::shared_ptr<spdlog::logger> logger;
 
 // Function to read the logging level from the config file using RapidJSON
 std::string readLoggingLevel(const std::string &configFile)
@@ -36,6 +37,15 @@ std::string readLoggingLevel(const std::string &configFile)
 
 int main()
 {
+	if (!logger)
+	{
+		spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [thread %t] %v");
+		logger = spdlog::basic_logger_mt("binance_logger", "logs/binance_exchange_logs.log");
+		spdlog::flush_on(spdlog::level::info);
+	}
+
+	// Usage of the global logger in main...
+	logger->info("Main function started.");
 	// Initialize the logger
 	spdlog::set_default_logger(logger);
 
@@ -100,24 +110,28 @@ int main()
 					// Hard-coded values for demonstration purposes
 					std::string port = "443";
 					int version = 11; // HTTP version 1.1
-
+					logger->info("Calling PerformAPI.");
 					// Create an object of HTTPRequests
 					HTTPRequest binanceRequest;
 
 					// Call performBinanceAPIRequest with the parsed URL
 					std::string response = binanceRequest.performBinanceAPIRequest(host, port, target, version);
-
+					logger->info("Response received.");
 					// Create an object of JSONParser
 					JSONParser jsonParser;
 
 					// Call performJSONDataParsing with the response
 					jsonParser.performJSONDataParsing(response);
 
-					// Create an object of QueryHandling
-					QueryHandling queryHandler;
+					while (true)
+					{
+						// Read the queries from query.json
+						QueryHandler queryHandler;
+						queryHandler.handleQueries("query.json", jsonParser);
 
-					// Call handleQueries with the query file path
-					queryHandler.handleQueries("query.json");
+						// Sleep for a certain interval before checking again (e.g., every 1 second)
+						std::this_thread::sleep_for(std::chrono::seconds(1));
+					}
 				}
 				else
 				{
