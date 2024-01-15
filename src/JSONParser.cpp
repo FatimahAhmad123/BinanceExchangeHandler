@@ -29,7 +29,7 @@ void JSONParser::performJSONDataParsing(const std::string &jsonResponse)
 			return;
 		}
 
-		if (document.HasMember("symbols") && document["symbols"].IsArray())
+		if (document.HasMember("symbols") && document["symbols"].IsArray()) // check for null value in array
 		{
 			const rapidjson::Value &symbolsArray = document["symbols"]; // accessing highest symbols array without making a copy, checks for symbol key
 

@@ -16,13 +16,10 @@ add_library(BinanceHandler
 # Link external libraries
 target_include_directories(BinanceHandler
 	PRIVATE ${Boost_INCLUDE_DIRS}
-	${CMAKE_CURRENT_SOURCE_DIR}/include
+	${CMAKE_SOURCE_DIR}/include
 	${RapidJSON_INCLUDE_DIRS}
 )
 
-target_include_directories(BinanceHandler
-	PUBLIC ${CMAKE_SOURCE_DIR}/include
-)
 
 add_dependencies(BinanceHandler Boost rapidjson spdlog)
 

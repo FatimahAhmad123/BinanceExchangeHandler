@@ -1,8 +1,6 @@
 #include "BinanceHandler.h"
-#include "rapidjson/document.h"
 #include "rapidjson/ostreamwrapper.h"
 #include "rapidjson/prettywriter.h"
-#include <iostream>
 #include <fstream>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -14,8 +12,6 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <unordered_set>
-
-std::unordered_set<int> processedIds;
 
 void QueryHandler::handleQueries(const std::string &queryFile, JSONParser &jsonParser)
 {

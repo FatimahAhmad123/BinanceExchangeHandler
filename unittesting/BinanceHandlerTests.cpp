@@ -11,7 +11,7 @@ TEST(BinanceHandlerTests, ConnectionAndDataRetrieval)
 {
 	HTTPRequest httpRequest;
 
-	std::string responseData = httpRequest.performBinanceAPIRequest("fapi.binance.com", "443", "/fapi/v1/exchangeInfo", 11);
+	std::string responseData = httpRequest.performBinanceAPIRequest("fapi.binance.com", "443", "/fapi/v1/exchangeInfo", 11); // hard code values
 	ASSERT_FALSE(responseData.empty());
 }
 

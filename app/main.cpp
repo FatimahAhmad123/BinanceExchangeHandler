@@ -61,7 +61,7 @@ int main()
 	else
 	{
 		std::cout << "Error reading log level from config." << std::endl;
-		return EXIT_FAILURE;
+		return EXIT_FAILURE; // set default logging level
 	}
 	try
 	{
@@ -124,11 +124,10 @@ int main()
 
 					// Call performJSONDataParsing with the response
 					jsonParser.performJSONDataParsing(response);
-
+					QueryHandler queryHandler;
 					while (true)
 					{
 						// Read the queries from query.json
-						QueryHandler queryHandler;
 						queryHandler.handleQueries("query.json", jsonParser);
 
 						// Sleep for a certain interval before checking again (e.g., every 1 second)
