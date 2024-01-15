@@ -1,0 +1,9 @@
+{
+	"logging": {
+		"level": "trace",
+		"file": true,
+		"console": true
+	},
+	"exchange_info_url": "https://api.binance.com/api/v1/exchangeInfo",
+	"request_interval": 60
+}
