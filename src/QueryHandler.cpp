@@ -100,7 +100,7 @@ void QueryHandler::handleQueries(const std::string &queryFile, JSONParser &jsonP
 	}
 }
 
-void QueryHandler::handleGetQuery(const rapidjson::Value &queryObject, const JSONParser &jsonParser) // jsonparcer object to call symbolinfo
+void QueryHandler::handleGetQuery(const rapidjson::Value &queryObject, JSONParser &jsonParser) // jsonparcer object to call symbolinfo
 {
 	if (!queryObject.IsObject())
 	{
@@ -119,7 +119,7 @@ void QueryHandler::handleGetQuery(const rapidjson::Value &queryObject, const JSO
 	logger->info("GET Query - Symbol: {}", symbol);
 
 	const std::unordered_map<std::string, std::string> &symbolInfo = jsonParser.getSymbolInfo(symbol);
-
+	logger->info("Before processing query. SymbolInfoMap size: {}", jsonParser.getSymbolInfoMap().size());
 	rapidjson::Document answerDoc;
 	answerDoc.SetObject();
 
@@ -174,14 +174,28 @@ void QueryHandler::handleGetQuery(const rapidjson::Value &queryObject, const JSO
 		logger->warn("GET Query - Symbol: {}, DataField: quoteAsset not found.", symbol);
 	}
 
-	// Write the result to answers.json
-	std::ofstream outputFile("answers.json");
+	if (!symbolInfo.empty())
+	{
+		// Check if the symbol is deleted
+		const auto &deletedIt = std::find_if(symbolInfo.begin(), symbolInfo.end(),
+											 [](const auto &entry)
+											 { return entry.second.empty(); });
+
+		if (deletedIt != symbolInfo.end())
+		{
+			logger->error("GET Query - Symbol: {}, Error: Symbol is deleted.", symbol);
+			return;
+		}
+	}
+	logger->info("After processing query. SymbolInfoMap size: {}", jsonParser.getSymbolInfoMap().size());
+
+	std::ofstream outputFile("answers.json", std::ios::app);
 	if (outputFile.is_open())
 	{
 		rapidjson::OStreamWrapper osw(outputFile);
 		rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
 		answerDoc.Accept(writer);
-		outputFile.close();
+		outputFile << "," << std::endl; // Adding a newline to separate entries
 	}
 	else
 	{
@@ -234,8 +248,10 @@ void QueryHandler::handleUpdateQuery(const rapidjson::Value &queryObject, JSONPa
 	// Call the handleUpdate method to perform the update
 	jsonParser.handleUpdate(symbol, updatedInfo);
 }
+
 void QueryHandler::handleDeleteQuery(const rapidjson::Value &queryObject, JSONParser &jsonParser)
 {
+
 	if (!queryObject.IsObject())
 	{
 		logger->error("Invalid query object.");

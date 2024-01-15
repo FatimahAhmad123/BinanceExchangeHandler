@@ -40,7 +40,7 @@ class QueryHandler
 {
 public:
 	void handleQueries(const std::string &queryFile, JSONParser &jsonParser);
-	void handleGetQuery(const rapidjson::Value &queryObject, const JSONParser &jsonParser);
+	void handleGetQuery(const rapidjson::Value &queryObject, JSONParser &jsonParser);
 	void handleUpdateQuery(const rapidjson::Value &queryObject, JSONParser &jsonParser);
 	void handleDeleteQuery(const rapidjson::Value &queryObject, JSONParser &jsonParser);
 };

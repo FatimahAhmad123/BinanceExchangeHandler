@@ -105,7 +105,9 @@ int main()
 				if (posPath != std::string::npos)
 				{
 					std::string host = apiUrl.substr(posProtocol, posPath - posProtocol);
+					logger->info(host);
 					std::string target = apiUrl.substr(posPath);
+					logger->info(target);
 
 					// Hard-coded values for demonstration purposes
 					std::string port = "443";
